@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>RK.POKE — Jual Beli & Lelang Kartu Pokemon Indonesia</title>
+  <meta name="description" content="Platform jual beli dan lelang kartu Pokemon untuk komunitas Indonesia">
+  <meta name="keywords" content="jual beli kartu pokemon, lelang pokemon, pokemon indonesia">
+  <meta name="author" content="RK.POKE Community">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    .card-hover { transition: transform .2s, box-shadow .2s; cursor: pointer; }
+    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 30px -12px rgba(0,0,0,0.25); }
+    .tab-active { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; box-shadow: 0 2px 10px rgba(249,115,22,.4); }
+    .listing-card { transition: all 0.2s; }
+    .listing-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px -5px rgba(0,0,0,0.15); }
+    .auction-card { border-left: 4px solid #f97316; }
+    .platform-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .platform-shopee { background: #ee4d2d; color: white; }
+    .platform-tokopedia { background: #42b549; color: white; }
+    .platform-whatsapp { background: #25D366; color: white; }
+    .platform-facebook { background: #1877f2; color: white; }
+    .countdown { font-family: monospace; font-weight: bold; }
+    .modal-overlay { background: rgba(0,0,0,0.75); backdrop-filter: blur(5px); }
+    .chat-message { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    img { max-width: 100%; height: auto; object-fit: contain; }
+    .detail-image { max-height: 350px; width: auto; margin: 0 auto; }
+    .image-preview { position: relative; display: inline-block; }
+    .image-preview img { max-width: 150px; max-height: 150px; border-radius: 12px; border: 2px solid #f97316; }
+    .remove-image { position: absolute; top: -8px; right: -8px; background: red; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; }
+    .upload-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .upload-area:hover { border-color: #f97316; background: #fff7ed; }
+    .auth-card { background: rgba(255,255,255,0.98); border-radius: 24px; max-width: 450px; margin: 0 auto; }
+    .auth-toggle { transition: all 0.2s; cursor: pointer; }
+    .auth-toggle.active { border-bottom: 3px solid #f97316; color: #f97316; }
+    .disclaimer-box { background: #fef3c7; border-left: 4px solid #f59e0b; }
+    .report-btn { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+    .report-btn:hover { background: #dc2626; }
+    .captcha { background: #f3f4f6; border-radius: 12px; padding: 12px; display: inline-flex; align-items: center; gap: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- ==================== LOGIN / REGISTER PAGE ==================== -->
+<div id="authPage" class="min-h-screen flex items-center justify-center p-4">
+  <div class="auth-card p-8 shadow-2xl">
+    <div class="text-center mb-8">
+      <i class="fas fa-gavel text-orange-500 text-5xl mb-3"></i>
+      <h1 class="text-3xl font-bold text-gray-800">RK.<span class="text-orange-500">POKE</span></h1>
+      <p class="text-gray-500 mt-2">Jual Beli & Lelang Kartu Pokemon Indonesia</p>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div class="disclaimer-box p-3 rounded-xl mb-6 text-xs">
+      <p class="font-bold text-amber-800"><i class="fas fa-shield-alt"></i> ⚠️ DISCLAIMER KEAMANAN:</p>
+      <ul class="text-amber-700 mt-1 space-y-1">
+        <li>• Platform ini bersifat <strong>open source</strong> dan data disimpan di browser Anda sendiri</li>
+        <li>• <strong>JANGAN gunakan password yang sama</strong> dengan akun penting lainnya (email, bank, dll)</li>
+        <li>• Semua transaksi dilakukan di luar platform (Shopee, Tokopedia, WhatsApp)</li>
+        <li>• Admin <strong>TIDAK bertanggung jawab</strong> atas transaksi yang terjadi di luar platform</li>
+        <li>• Data Anda hanya tersimpan di device Anda, kami tidak menyimpan server</li>
+      </ul>
+    </div>
+
+    <div class="flex gap-4 mb-6 border-b">
+      <button id="showLoginBtn" class="auth-toggle active pb-2 px-4 text-gray-700 font-semibold">Login</button>
+      <button id="showRegisterBtn" class="auth-toggle pb-2 px-4 text-gray-400 font-semibold">Daftar</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="mb-4">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+        <input type="text" id="loginUsername" maxlength="30" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Masukkan username">
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+        <input type="password" id="loginPassword" maxlength="100" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Masukkan password">
+      </div>
+      <div class="mb-4 captcha flex items-center justify-between">
+        <span id="captchaQuestion" class="text-sm font-mono bg-gray-100 px-3 py-2 rounded">5 + 3 = ?</span>
+        <input type="text" id="loginCaptcha" class="w-24 px-3 py-2 border rounded-xl text-center" placeholder="Jawab">
+      </div>
+      <button onclick="handleLogin()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-bold transition hover:opacity-90">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+      <p class="text-center text-gray-400 text-sm mt-4">Belum punya akun? <button onclick="showRegister()" class="text-orange-500">Daftar sekarang</button></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" class="hidden">
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+        <input type="text" id="regFullname" maxlength="50" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Nama lengkap">
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+        <input type="text" id="regUsername" maxlength="20" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Username (huruf/angka, 3-20 karakter)" pattern="[a-zA-Z0-9]{3,20}">
+        <p class="text-xs text-gray-400 mt-1">Hanya huruf dan angka, 3-20 karakter</p>
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+        <input type="email" id="regEmail" maxlength="100" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Email (opsional)">
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+        <input type="password" id="regPassword" maxlength="100" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Minimal 6 karakter">
+        <p class="text-xs text-gray-400 mt-1">Minimal 6 karakter, gunakan password unik!</p>
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Konfirmasi Password</label>
+        <input type="password" id="regConfirmPassword" maxlength="100" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="Ulangi password">
+      </div>
+      <div class="mb-3">
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Nomor WhatsApp (untuk transaksi)</label>
+        <input type="tel" id="regWhatsapp" maxlength="15" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-400 outline-none" placeholder="08xxxxxxxxxx">
+      </div>
+      <div class="mb-4 captcha flex items-center justify-between">
+        <span id="regCaptchaQuestion" class="text-sm font-mono bg-gray-100 px-3 py-2 rounded">7 + 2 = ?</span>
+        <input type="text" id="regCaptcha" class="w-24 px-3 py-2 border rounded-xl text-center" placeholder="Jawab">
+      </div>
+      <button onclick="handleRegister()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-bold transition hover:opacity-90">
+        <i class="fas fa-user-plus"></i> Daftar
+      </button>
+      <p class="text-center text-gray-400 text-sm mt-4">Sudah punya akun? <button onclick="showLogin()" class="text-orange-500">Login disini</button></p>
+    </div>
+
+    <div id="authError" class="mt-4 hidden bg-red-100 text-red-700 p-3 rounded-xl text-sm text-center"></div>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="mainApp" class="hidden">
+  <header class="bg-white/95 backdrop-blur shadow-lg sticky top-0 z-30">
+    <div class="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <i class="fas fa-gavel text-orange-500 text-2xl"></i>
+        <h1 class="text-xl font-bold text-gray-800">RK.<span class="text-orange-500">POKE</span>
+          <span class="text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-0.5 rounded-full ml-1">Indonesia</span>
+        </h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right hidden sm:block">
+          <p class="text-xs text-gray-500">Welcome,</p>
+          <p id="currentUsername" class="text-sm font-semibold text-gray-800"></p>
+        </div>
+        <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-1">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Floating Disclaimer Banner -->
+  <div class="bg-amber-100 border-b border-amber-200 text-amber-800 text-xs py-2 px-4 text-center">
+    <i class="fas fa-shield-alt mr-1"></i> ⚠️ Platform demo - Jangan gunakan password penting. Transaksi via external link.
+  </div>
+
+  <div class="container mx-auto px-4 py-3">
+    <div class="flex gap-2 bg-gray-100 p-1 rounded-xl overflow-x-auto">
+      <button id="tabMarket" class="tab-active px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap"><i class="fas fa-store"></i> Marketplace</button>
+      <button id="tabAuctions" class="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-gray-600 whitespace-nowrap"><i class="fas fa-gavel"></i> Lelang Aktif</button>
+      <button id="tabSell" class="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-gray-600 whitespace-nowrap"><i class="fas fa-plus-circle"></i> Jual / Lelang</button>
+      <button id="tabMyListings" class="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-gray-600 whitespace-nowrap"><i class="fas fa-user"></i> Saya</button>
+      <button id="tabReports" class="px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 text-gray-600 whitespace-nowrap"><i class="fas fa-flag"></i> Laporan</button>
+    </div>
+  </div>
+
+  <main class="container mx-auto px-4 py-6 max-w-7xl">
+    <!-- Marketplace -->
+    <div id="secMarket">
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+          <div><h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-tag text-orange-500 mr-2"></i>Marketplace</h2><p class="text-gray-400 text-sm">Semua kartu dari seluruh seller Indonesia</p></div>
+          <div class="flex gap-2"><input id="searchDirect" type="text" placeholder="Cari nama kartu..." class="flex-1 md:w-64 px-4 py-2 border rounded-xl"><button id="searchDirectBtn" class="bg-orange-500 text-white px-4 py-2 rounded-xl"><i class="fas fa-search"></i></button></div>
+        </div>
+        <div id="directGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+        <div id="noDirect" class="hidden text-center py-16 text-gray-400"><i class="fas fa-box-open text-5xl mb-3"></i><p>Belum ada kartu dijual langsung</p></div>
+      </div>
+    </div>
+
+    <!-- Lelang Aktif -->
+    <div id="secAuctions" class="hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+          <div><h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-gavel text-orange-500 mr-2"></i>Lelang Aktif</h2><p class="text-gray-400 text-sm">Semua lelang dari seluruh seller Indonesia</p></div>
+          <div class="flex gap-2"><input id="searchAuction" type="text" placeholder="Cari lelang..." class="flex-1 md:w-64 px-4 py-2 border rounded-xl"><button id="searchAuctionBtn" class="bg-orange-500 text-white px-4 py-2 rounded-xl"><i class="fas fa-search"></i></button></div>
+        </div>
+        <div id="auctionGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        <div id="noAuction" class="hidden text-center py-16 text-gray-400"><i class="fas fa-gavel text-5xl mb-3"></i><p>Belum ada lelang aktif</p></div>
+      </div>
+    </div>
+
+    <!-- Form Jual / Lelang -->
+    <div id="secSell" class="hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-6">
+        <div class="flex items-center gap-3 mb-6"><i class="fas fa-plus-circle text-orange-500 text-3xl"></i><div><h2 class="text-2xl font-bold text-gray-800">Pasang Kartu</h2><p class="text-gray-400">Bisa jual langsung atau buka lelang</p></div></div>
+        <div class="flex gap-3 mb-6 border-b"><button id="typeDirectBtn" class="py-2 px-4 border-b-2 border-orange-500 text-orange-500 font-semibold">💰 Jual Langsung</button><button id="typeAuctionBtn" class="py-2 px-4 text-gray-500">⏱️ Buka Lelang</button></div>
+        
+        <!-- Rate Limit Warning -->
+        <div class="mb-4 p-2 bg-blue-50 rounded-lg text-xs text-blue-600"><i class="fas fa-info-circle"></i> Anda dapat memasang maksimal 10 listing aktif</div>
+        
+        <form id="sellForm" class="space-y-5">
+          <input type="hidden" id="saleType" value="direct">
+          <div class="grid md:grid-cols-2 gap-5">
+            <div><label class="block text-sm font-semibold text-gray-700 mb-1">Nama Kartu <span class="text-red-500">*</span></label><input type="text" id="cardName" maxlength="100" class="w-full px-4 py-2 border rounded-xl" required></div>
+            <div><label class="block text-sm font-semibold text-gray-700 mb-1">Set / Ekspansi</label><input type="text" id="cardSet" maxlength="50" class="w-full px-4 py-2 border rounded-xl"></div>
+            <div><label class="block text-sm font-semibold text-gray-700 mb-1">Rarity</label><select id="cardRarity" class="w-full px-4 py-2 border rounded-xl"><option>Common</option><option>Uncommon</option><option>Rare</option><option>Rare Holo</option><option>Ultra Rare</option><option>Secret Rare</option></select></div>
+            <div><label class="block text-sm font-semibold text-gray-700 mb-1">Kondisi</label><select id="cardCondition" class="w-full px-4 py-2 border rounded-xl"><option>Mint</option><option>Near Mint</option><option>Excellent</option><option>Good</option></select></div>
+          </div>
+          
+          <div id="directFields">
+            <div class="grid md:grid-cols-2 gap-5">
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Harga Jual (Rp) <span class="text-red-500">*</span></label><input type="number" id="directPrice" min="1000" max="1000000000" class="w-full px-4 py-2 border rounded-xl"></div>
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Platform</label><select id="directPlatform" class="w-full px-4 py-2 border rounded-xl"><option value="shopee">Shopee</option><option value="tokopedia">Tokopedia</option><option value="whatsapp">WhatsApp</option><option value="facebook">Facebook</option><option value="lazada">Lazada</option><option value="instagram">Instagram</option><option value="other">Link Lain</option></select></div>
+            </div>
+            <div><label class="block text-sm font-semibold text-gray-700 mb-1">Link Produk <span class="text-red-500">*</span></label><input type="url" id="productLink" maxlength="500" class="w-full px-4 py-2 border rounded-xl" placeholder="https://..."></div>
+          </div>
+          
+          <div id="auctionFields" class="hidden">
+            <div class="grid md:grid-cols-2 gap-5">
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Harga Awal (Rp) <span class="text-red-500">*</span></label><input type="number" id="startPrice" min="1000" class="w-full px-4 py-2 border rounded-xl"></div>
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Minimal Kenaikan (Rp)</label><input type="number" id="minBidIncrement" min="1000" class="w-full px-4 py-2 border rounded-xl" value="10000"></div>
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Harga Buy Now</label><input type="number" id="buyNowPrice" min="0" class="w-full px-4 py-2 border rounded-xl"></div>
+              <div><label class="block text-sm font-semibold text-gray-700 mb-1">Durasi Lelang</label><select id="auctionDuration" class="w-full px-4 py-2 border rounded-xl"><option value="1">1 Hari</option><option value="3" selected>3 Hari</option><option value="7">7 Hari</option><option value="14">14 Hari</option></select></div>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Foto Kartu (URL)</label>
+            <input type="url" id="cardImageUrl" class="w-full px-4 py-2 border rounded-xl" placeholder="https://... (link gambar)">
+            <div id="imagePreview" class="mt-2 hidden"><img id="previewImg" class="h-24 rounded"></div>
+          </div>
+          
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">Deskripsi</label><textarea id="cardDesc" maxlength="500" rows="3" class="w-full px-4 py-2 border rounded-xl" placeholder="Maksimal 500 karakter"></textarea></div>
+          
+          <div class="captcha flex items-center justify-between gap-3">
+            <span id="sellCaptchaQuestion" class="text-sm font-mono bg-gray-100 px-3 py-2 rounded">4 + 6 = ?</span>
+            <input type="text" id="sellCaptcha" class="w-24 px-3 py-2 border rounded-xl text-center" placeholder="Jawab">
+          </div>
+          
+          <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-xl font-bold"><i class="fas fa-rocket"></i> Pasang Listing!</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Listing Saya -->
+    <div id="secMyListings" class="hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-6">
+        <div class="flex justify-between items-center mb-5"><div><h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-box text-orange-500 mr-2"></i>Listing Saya</h2><p class="text-gray-400 text-sm">Kartu milik Anda</p></div><button onclick="clearAllListings()" class="text-red-500 text-sm"><i class="fas fa-trash"></i> Hapus Semua</button></div>
+        <div id="myListingsGrid" class="space-y-4"></div><div id="noMyListings" class="hidden text-center py-16 text-gray-400"><i class="fas fa-box-open text-5xl mb-3"></i><p>Belum ada listing</p></div>
+      </div>
+    </div>
+
+    <!-- Laporan -->
+    <div id="secReports" class="hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-5 md:p-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-flag text-orange-500 mr-2"></i>Laporkan Masalah</h2>
+        <p class="text-gray-500 mb-4">Temukan konten yang mencurigakan? Laporkan ke admin.</p>
+        <form id="reportForm" class="space-y-4">
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">Link Kartu Bermasalah</label><input type="url" id="reportLink" class="w-full px-4 py-2 border rounded-xl" placeholder="https://..."></div>
+          <div><label class="block text-sm font-semibold text-gray-700 mb-1">Alasan Laporan</label><textarea id="reportReason" rows="3" maxlength="300" class="w-full px-4 py-2 border rounded-xl" placeholder="Jelaskan masalahnya..."></textarea></div>
+          <button type="submit" class="bg-red-500 text-white px-6 py-2 rounded-xl">Kirim Laporan</button>
+        </form>
+        <div class="mt-6 p-3 bg-gray-50 rounded-xl text-xs text-gray-500"><i class="fas fa-info-circle"></i> Laporan akan disimpan dan admin akan meninjau dalam 1x24 jam.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Detail -->
+<div id="detailModal" class="fixed inset-0 hidden z-50"><div class="modal-overlay absolute inset-0" onclick="closeDetailModal()"></div><div class="relative bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-auto mt-10 mb-10"><div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center"><h3 id="modalTitle" class="text-xl font-bold">Detail Kartu</h3><button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button></div><div id="modalContent" class="p-5"></div></div></div>
+
+<div id="toast" class="fixed bottom-5 right-5 bg-green-600 text-white px-5 py-3 rounded-xl shadow-xl hidden z-50"><span id="toastTxt"></span></div>
+
+<script>
+// ==================== SECURITY: HASHING PASSWORD ====================
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ==================== SECURITY: RATE LIMIT ====================
+let rateLimit = {
+  lastBidTime: 0,
+  bidCount: 0,
+  lastChatTime: 0,
+  chatCount: 0
+};
+
+function checkRateLimit(action) {
+  const now = Date.now();
+  if (action === 'bid') {
+    if (now - rateLimit.lastBidTime < 10000) { // 10 detik
+      rateLimit.bidCount++;
+      if (rateLimit.bidCount > 3) return false;
+    } else {
+      rateLimit.bidCount = 1;
+      rateLimit.lastBidTime = now;
+    }
+  }
+  if (action === 'chat') {
+    if (now - rateLimit.lastChatTime < 5000) {
+      rateLimit.chatCount++;
+      if (rateLimit.chatCount > 5) return false;
+    } else {
+      rateLimit.chatCount = 1;
+      rateLimit.lastChatTime = now;
+    }
+  }
+  return true;
+}
+
+// ==================== CAPTCHA ====================
+let currentCaptcha = { login: { a: 5, b: 3 }, register: { a: 7, b: 2 }, sell: { a: 4, b: 6 } };
+
+function generateCaptcha(type) {
+  const a = Math.floor(Math.random() * 9) + 1;
+  const b = Math.floor(Math.random() * 9) + 1;
+  currentCaptcha[type] = { a, b };
+  if (type === 'login') document.getElementById('captchaQuestion').innerText = `${a} + ${b} = ?`;
+  if (type === 'register') document.getElementById('regCaptchaQuestion').innerText = `${a} + ${b} = ?`;
+  if (type === 'sell') document.getElementById('sellCaptchaQuestion').innerText = `${a} + ${b} = ?`;
+}
+
+function verifyCaptcha(type, answer) {
+  const captcha = currentCaptcha[type];
+  return parseInt(answer) === captcha.a + captcha.b;
+}
+
+// ==================== AUTH SYSTEM ====================
+let currentUser = null;
+let allListings = [];
+let reports = [];
+
+function loadAllListings() {
+  const saved = localStorage.getItem('rkpoke_all_listings');
+  allListings = saved ? JSON.parse(saved) : [];
+}
+
+function saveAllListings() {
+  localStorage.setItem('rkpoke_all_listings', JSON.stringify(allListings));
+}
+
+function loadReports() {
+  const saved = localStorage.getItem('rkpoke_reports');
+  reports = saved ? JSON.parse(saved) : [];
+}
+
+function saveReports() {
+  localStorage.setItem('rkpoke_reports', JSON.stringify(reports));
+}
+
+function loadUsers() {
+  const saved = localStorage.getItem('rkpoke_users');
+  if (!saved) return [];
+  try {
+    const users = JSON.parse(saved);
+    return users;
+  } catch { return []; }
+}
+
+function saveUsers(users) {
+  localStorage.setItem('rkpoke_users', JSON.stringify(users));
+}
+
+async function handleLogin() {
+  const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  const captchaAnswer = document.getElementById('loginCaptcha').value;
+  const errorDiv = document.getElementById('authError');
+  
+  if (!username || !password) {
+    errorDiv.innerHTML = 'Username dan password wajib diisi!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  if (!verifyCaptcha('login', captchaAnswer)) {
+    errorDiv.innerHTML = 'Captcha salah!';
+    errorDiv.classList.remove('hidden');
+    generateCaptcha('login');
+    document.getElementById('loginCaptcha').value = '';
+    return;
+  }
+  
+  const users = loadUsers();
+  const hashedPassword = await hashPassword(password);
+  const user = users.find(u => u.username === username && u.passwordHash === hashedPassword);
+  
+  if (user) {
+    currentUser = { ...user, passwordHash: undefined };
+    localStorage.setItem('rkpoke_currentUser', JSON.stringify(currentUser));
+    document.getElementById('currentUsername').innerText = user.fullname || user.username;
+    document.getElementById('authPage').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    renderAll();
+    showToast(`Selamat datang, ${user.fullname || user.username}!`);
+  } else {
+    errorDiv.innerHTML = 'Username atau password salah!';
+    errorDiv.classList.remove('hidden');
+  }
+  generateCaptcha('login');
+  document.getElementById('loginCaptcha').value = '';
+}
+
+async function handleRegister() {
+  const fullname = document.getElementById('regFullname').value.trim();
+  const username = document.getElementById('regUsername').value.trim().toLowerCase();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPassword').value;
+  const whatsapp = document.getElementById('regWhatsapp').value.trim();
+  const captchaAnswer = document.getElementById('regCaptcha').value;
+  const errorDiv = document.getElementById('authError');
+  
+  // Validasi username
+  if (!username.match(/^[a-zA-Z0-9]{3,20}$/)) {
+    errorDiv.innerHTML = 'Username harus 3-20 karakter (huruf/angka saja)!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  if (!password) {
+    errorDiv.innerHTML = 'Password wajib diisi!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  if (password.length < 6) {
+    errorDiv.innerHTML = 'Password minimal 6 karakter!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  if (password !== confirmPassword) {
+    errorDiv.innerHTML = 'Password tidak cocok!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  if (!verifyCaptcha('register', captchaAnswer)) {
+    errorDiv.innerHTML = 'Captcha salah!';
+    errorDiv.classList.remove('hidden');
+    generateCaptcha('register');
+    document.getElementById('regCaptcha').value = '';
+    return;
+  }
+  
+  const users = loadUsers();
+  if (users.find(u => u.username === username)) {
+    errorDiv.innerHTML = 'Username sudah terdaftar!';
+    errorDiv.classList.remove('hidden');
+    return;
+  }
+  
+  const passwordHash = await hashPassword(password);
+  
+  const newUser = {
+    id: Date.now().toString(),
+    fullname: fullname || username,
+    username: username,
+    email: email,
+    passwordHash: passwordHash,
+    whatsapp: whatsapp,
+    joinDate: new Date().toISOString()
+  };
+  
+  users.push(newUser);
+  saveUsers(users);
+  
+  errorDiv.classList.add('hidden');
+  showToast('Pendaftaran berhasil! Silakan login.');
+  showLogin();
+  generateCaptcha('register');
+  document.getElementById('regCaptcha').value = '';
+  
+  document.getElementById('regFullname').value = '';
+  document.getElementById('regUsername').value = '';
+  document.getElementById('regEmail').value = '';
+  document.getElementById('regPassword').value = '';
+  document.getElementById('regConfirmPassword').value = '';
+  document.getElementById('regWhatsapp').value = '';
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('rkpoke_currentUser');
+  document.getElementById('authPage').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  showToast('Anda telah logout');
+}
+
+function showLogin() {
+  document.getElementById('loginForm').classList.remove('hidden');
+  document.getElementById('registerForm').classList.add('hidden');
+  document.getElementById('showLoginBtn').classList.add('active', 'text-gray-700');
+  document.getElementById('showLoginBtn').classList.remove('text-gray-400');
+  document.getElementById('showRegisterBtn').classList.remove('active', 'text-gray-700');
+  document.getElementById('showRegisterBtn').classList.add('text-gray-400');
+  document.getElementById('authError').classList.add('hidden');
+  generateCaptcha('login');
+}
+
+function showRegister() {
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('registerForm').classList.remove('hidden');
+  document.getElementById('showRegisterBtn').classList.add('active', 'text-gray-700');
+  document.getElementById('showRegisterBtn').classList.remove('text-gray-400');
+  document.getElementById('showLoginBtn').classList.remove('active', 'text-gray-700');
+  document.getElementById('showLoginBtn').classList.add('text-gray-400');
+  document.getElementById('authError').classList.add('hidden');
+  generateCaptcha('register');
+}
+
+function checkSession() {
+  loadAllListings();
+  loadReports();
+  const savedUser = localStorage.getItem('rkpoke_currentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    document.getElementById('currentUsername').innerText = currentUser.fullname || currentUser.username;
+    document.getElementById('authPage').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    renderAll();
+  }
+  generateCaptcha('login');
+  generateCaptcha('register');
+  generateCaptcha('sell');
+}
+
+// ==================== IMAGE PREVIEW ====================
+document.getElementById('cardImageUrl').addEventListener('input', function() {
+  const url = this.value.trim();
+  const preview = document.getElementById('imagePreview');
+  const img = document.getElementById('previewImg');
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    img.src = url;
+    preview.classList.remove('hidden');
+  } else {
+    preview.classList.add('hidden');
+  }
+});
+
+// ==================== FORMATTERS ====================
+function formatRp(n) { if (n >= 1e6) return "Rp " + (n/1e6).toFixed(1) + "jt"; if (n >= 1e3) return "Rp " + Math.round(n/1e3) + "rb"; return "Rp " + n; }
+function getTimeAgo(date) { const sec = Math.floor((new Date() - new Date(date))/1000); if(sec<60) return "baru saja"; const min=Math.floor(sec/60); if(min<60) return min+" menit lalu"; const hour=Math.floor(min/60); if(hour<24) return hour+" jam lalu"; const day=Math.floor(hour/24); return day+" hari lalu"; }
+function getCountdown(endTime) { const diff = new Date(endTime) - new Date(); if(diff<=0) return "Selesai"; const days=Math.floor(diff/86400000), hours=Math.floor((diff%86400000)/3600000), mins=Math.floor((diff%3600000)/60000); if(days>0) return `${days}h ${hours}j`; return `${hours}j ${mins}m`; }
+function getPlatformIcon(platform) { const icons={shopee:'<i class="fab fa-shopee"></i> Shopee',tokopedia:'<i class="fas fa-store"></i> Tokopedia',whatsapp:'<i class="fab fa-whatsapp"></i> WhatsApp',facebook:'<i class="fab fa-facebook"></i> Facebook',lazada:'<i class="fas fa-shopping-bag"></i> Lazada',instagram:'<i class="fab fa-instagram"></i> Instagram',other:'<i class="fas fa-link"></i> Link'}; return icons[platform]||icons.other; }
+function escapeHtml(str){ if(!str) return ''; return str.replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
+function showToast(msg){ const toast=document.getElementById("toast"); document.getElementById("toastTxt").innerText=msg; toast.classList.remove("hidden"); setTimeout(()=>toast.classList.add("hidden"),3000); }
+
+// ==================== RENDER FUNCTIONS ====================
+function renderDirectCard(listing) {
+  const defaultImage = 'https://via.placeholder.com/300x400?text=RK.POKE';
+  const isOwner = currentUser && listing.sellerId === currentUser.id;
+  return `<div class="listing-card bg-white border rounded-2xl overflow-hidden shadow-sm cursor-pointer relative" onclick="openDetailModal('${listing.id}')">
+    <div class="bg-gray-50 flex justify-center items-center p-3 h-44"><img src="${listing.image||defaultImage}" class="h-full w-auto object-contain" onerror="this.src='${defaultImage}'"></div>
+    <div class="p-3">
+      <h3 class="font-bold text-sm">${escapeHtml(listing.cardName)}</h3>
+      <p class="text-xs text-gray-400">${escapeHtml(listing.set||'-')}</p>
+      <div class="mt-2 text-lg font-bold text-emerald-600">${formatRp(listing.price)}</div>
+      <p class="text-xs text-gray-400 mt-1"><i class="fas fa-user"></i> ${escapeHtml(listing.sellerName || listing.sellerUsername)}</p>
+    </div>
+    <div class="absolute top-2 right-2"><span class="report-btn" onclick="event.stopPropagation();reportListing('${listing.id}')"><i class="fas fa-flag"></i> Laporkan</span></div>
+  </div>`;
+}
+
+function renderAuctionCard(auction) {
+  const isActive = new Date(auction.endTime) > new Date();
+  const currentBid = auction.bids?.length ? Math.max(...auction.bids.map(b=>b.amount)) : auction.startPrice;
+  const defaultImage = 'https://via.placeholder.com/300x400?text=RK.POKE+Auction';
+  return `<div class="auction-card listing-card bg-white border rounded-2xl overflow-hidden shadow-sm cursor-pointer relative" onclick="openDetailModal('${auction.id}')">
+    <div class="bg-gray-50 flex justify-center items-center p-3 h-44"><img src="${auction.image||defaultImage}" class="h-full w-auto object-contain" onerror="this.src='${defaultImage}'"></div>
+    <div class="p-4">
+      <div class="flex justify-between"><h3 class="font-bold">${escapeHtml(auction.cardName)}</h3><span class="text-xs px-2 py-0.5 rounded-full ${isActive?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${isActive?'Aktif':'Selesai'}</span></div>
+      <p class="text-xs text-gray-400">${escapeHtml(auction.set||'-')}</p>
+      <div class="mt-3 flex justify-between"><div><p class="text-xs text-gray-500">Tawaran</p><p class="font-bold text-emerald-600">${formatRp(currentBid)}</p></div><div><p class="text-xs text-gray-500">${isActive?'Sisa Waktu':'Selesai'}</p><p class="font-bold ${isActive?'text-orange-500':'text-red-500'}">${isActive?getCountdown(auction.endTime):'Selesai'}</p></div></div>
+      ${auction.buyNowPrice?`<div class="mt-2 text-xs text-gray-400">Beli langsung: ${formatRp(auction.buyNowPrice)}</div>`:''}
+      <p class="text-xs text-gray-400 mt-2"><i class="fas fa-user"></i> ${escapeHtml(auction.sellerName || auction.sellerUsername)}</p>
+    </div>
+    <div class="absolute top-2 right-2"><span class="report-btn" onclick="event.stopPropagation();reportListing('${auction.id}')"><i class="fas fa-flag"></i> Laporkan</span></div>
+  </div>`;
+}
+
+function renderMyListing(listing) {
+  const isAuction = listing.type === 'auction';
+  const isActive = isAuction ? new Date(listing.endTime) > new Date() : true;
+  const currentPrice = isAuction && listing.bids?.length ? Math.max(...listing.bids.map(b=>b.amount)) : listing.price;
+  return `<div class="bg-white border rounded-xl p-4 flex flex-wrap gap-3 items-center justify-between">
+    <div class="flex gap-3 items-center flex-1 min-w-[180px]"><img src="${listing.image||'https://via.placeholder.com/60'}" class="w-14 h-18 object-contain bg-gray-50 rounded"><div><h4 class="font-bold">${escapeHtml(listing.cardName)}</h4><p class="text-xs text-gray-400">${escapeHtml(listing.set||'-')}</p></div></div>
+    <div class="text-right"><div class="font-bold text-emerald-600">${isAuction?formatRp(currentPrice):formatRp(listing.price)}</div><div class="text-xs text-gray-500">${isAuction?`${listing.bids?.length||0} tawaran`:'Jual Langsung'}</div>${isAuction?`<div class="text-xs ${isActive?'text-green-600':'text-red-600'}">${isActive?getCountdown(listing.endTime):'Selesai'}</div>`:''}</div>
+    <div class="flex gap-2"><button onclick="event.stopPropagation();openDetailModal('${listing.id}')" class="px-3 py-1 text-sm border rounded-lg"><i class="fas fa-eye"></i> Lihat</button><button onclick="event.stopPropagation();deleteListing('${listing.id}')" class="px-3 py-1 text-sm text-red-500 border border-red-200 rounded-lg"><i class="fas fa-trash"></i> Hapus</button></div>
+  </div>`;
+}
+
+// ==================== REPORT FUNCTION ====================
+function reportListing(listingId) {
+  const listing = allListings.find(l => l.id === listingId);
+  if (!listing) return;
+  const reason = prompt(`Laporkan kartu: ${listing.cardName}\n\nAlasan pelaporan:`, "Kartu palsu / scam / tidak sesuai deskripsi");
+  if (reason && reason.trim()) {
+    reports.push({
+      id: Date.now().toString(),
+      listingId: listingId,
+      listingName: listing.cardName,
+      sellerName: listing.sellerUsername,
+      reason: reason.trim(),
+      reporter: currentUser?.username || 'Anonymous',
+      date: new Date().toISOString()
+    });
+    saveReports();
+    showToast("Laporan terkirim! Admin akan meninjau dalam 1x24 jam.");
+  }
+}
+
+// ==================== MODAL DETAIL ====================
+function openDetailModal(listingId) {
+  const listing = allListings.find(l => l.id === listingId);
+  if (!listing) return;
+  const isAuction = listing.type === 'auction';
+  const isActive = isAuction ? new Date(listing.endTime) > new Date() : true;
+  const currentBid = isAuction && listing.bids?.length ? Math.max(...listing.bids.map(b=>b.amount)) : listing.startPrice;
+  const nextBid = isAuction && isActive ? (currentBid + (listing.minBidIncrement||10000)) : 0;
+  
+  let actionButtons = '';
+  if (!isAuction) {
+    actionButtons = `<div class="mt-5 p-4 bg-orange-50 rounded-xl text-center"><a href="${listing.link}" target="_blank" rel="noopener noreferrer" class="inline-block bg-orange-500 text-white px-6 py-3 rounded-xl font-bold"><i class="fas fa-external-link-alt"></i> Beli di ${getPlatformIcon(listing.platform)} →</a><p class="text-xs text-gray-500 mt-2">⚠️ Anda akan meninggalkan RK.POKE. Hati-hati dengan penipuan!</p></div>`;
+  } else if (isActive) {
+    actionButtons = `<div class="mt-5 p-4 border rounded-xl"><h4 class="font-bold mb-3"><i class="fas fa-gavel"></i> Ikut Lelang</h4><div class="flex gap-2 flex-wrap"><input type="number" id="bidAmount" class="flex-1 px-3 py-2 border rounded-xl" placeholder="Minimal ${formatRp(nextBid)}" value="${nextBid}"><input type="text" id="bidderName" class="flex-1 px-3 py-2 border rounded-xl" placeholder="Nama Anda" value="${currentUser?.username || ''}"><button onclick="placeBid('${listing.id}')" class="bg-orange-500 text-white px-5 py-2 rounded-xl font-semibold"><i class="fas fa-gavel"></i> Tawar</button></div>${listing.buyNowPrice?`<button onclick="buyNow('${listing.id}')" class="mt-3 w-full bg-emerald-500 text-white py-2 rounded-xl font-semibold"><i class="fas fa-bolt"></i> Beli Langsung (${formatRp(listing.buyNowPrice)})</button>`:''}<p class="text-xs text-gray-400 mt-2">⚠️ Pastikan Anda yakin sebelum menawar. Tawaran tidak bisa dibatalkan.</p></div>`;
+  } else {
+    const winner = listing.bids?.length ? listing.bids.sort((a,b)=>b.amount-a.amount)[0] : null;
+    actionButtons = `<div class="mt-5 p-4 bg-gray-100 rounded-xl text-center"><i class="fas fa-flag-checkered"></i> Lelang Selesai ${winner?`· Pemenang: ${escapeHtml(winner.bidderName)} dengan ${formatRp(winner.amount)}` : ''}</div>`;
+  }
+  
+  const modalContent = `
+    <div class="flex flex-col lg:flex-row gap-6">
+      <div class="lg:w-2/5"><img src="${listing.image||'https://via.placeholder.com/400'}" class="detail-image w-full rounded-xl shadow" onerror="this.src='https://via.placeholder.com/400?text=RK.POKE'"></div>
+      <div class="lg:w-3/5">
+        <h2 class="text-2xl font-bold">${escapeHtml(listing.cardName)}</h2>
+        <p class="text-gray-500">${escapeHtml(listing.set||'-')} · ${listing.rarity} · ${listing.condition}</p>
+        <p class="text-gray-500 text-sm mt-1">Seller: <strong>${escapeHtml(listing.sellerName || listing.sellerUsername)}</strong> · Dipasang ${getTimeAgo(listing.date)}</p>
+        ${listing.desc?`<div class="mt-3 p-3 bg-gray-50 rounded-xl whitespace-pre-wrap">${escapeHtml(listing.desc)}</div>`:''}
+        ${isAuction?`<div class="grid grid-cols-3 gap-2 mt-4 p-3 bg-orange-50 rounded-xl"><div><p class="text-xs text-gray-500">Harga Awal</p><p class="font-bold">${formatRp(listing.startPrice)}</p></div><div><p class="text-xs text-gray-500">Tawaran Saat Ini</p><p class="font-bold text-emerald-600">${formatRp(currentBid)}</p></div><div><p class="text-xs text-gray-500">Next Bid</p><p class="font-bold text-orange-500">${formatRp(nextBid)}+</p></div><div><p class="text-xs text-gray-500">Min. Kenaikan</p><p class="font-bold">${formatRp(listing.minBidIncrement)}</p></div><div><p class="text-xs text-gray-500">Status</p><p class="font-bold ${isActive?'text-green-600':'text-red-600'}">${isActive?getCountdown(listing.endTime):'Selesai'}</p></div>${listing.buyNowPrice?`<div><p class="text-xs text-gray-500">Beli Langsung</p><p class="font-bold text-emerald-600">${formatRp(listing.buyNowPrice)}</p></div>`:''}</div>`:`<div class="mt-4 p-3 bg-emerald-50 rounded-xl text-center"><span class="text-2xl font-bold text-emerald-600">${formatRp(listing.price)}</span><p class="text-xs text-gray-500 mt-1">Harga tetap · Klik tombol di bawah untuk membeli</p></div>`}
+        ${actionButtons}
+        <div class="mt-4 text-center"><a href="${listing.link||'#'}" target="_blank" rel="noopener noreferrer" class="text-blue-500 text-sm break-all">${listing.link||'Tidak ada link'}</a></div>
+        <div class="mt-4 text-center"><button onclick="reportListing('${listing.id}')" class="text-red-500 text-xs"><i class="fas fa-flag"></i> Laporkan Kartu Ini</button></div>
+      </div>
+    </div>
+  `;
+  document.getElementById("modalTitle").innerHTML = `<i class="fas fa-${isAuction?'gavel':'tag'} text-orange-500"></i> ${escapeHtml(listing.cardName)}`;
+  document.getElementById("modalContent").innerHTML = modalContent;
+  document.getElementById("detailModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDetailModal() { document.getElementById("detailModal").classList.add("hidden"); document.body.style.overflow = "auto"; }
+
+// ==================== BID & CHAT with Rate Limit ====================
+function placeBid(auctionId) {
+  if (!checkRateLimit('bid')) { showToast("Terlalu banyak tawaran! Tunggu 10 detik."); return; }
+  const auction = allListings.find(l => l.id === auctionId);
+  if (!auction || new Date(auction.endTime) <= new Date()) { showToast("Lelang sudah selesai!"); closeDetailModal(); renderAll(); return; }
+  const currentBid = auction.bids?.length ? Math.max(...auction.bids.map(b=>b.amount)) : auction.startPrice;
+  const minBid = currentBid + (auction.minBidIncrement||10000);
+  const bidAmount = parseInt(document.getElementById("bidAmount")?.value);
+  const bidderName = document.getElementById("bidderName")?.value || currentUser?.username || "Pembeli";
+  if (!bidAmount || bidAmount < minBid) { showToast(`Minimal tawaran: ${formatRp(minBid)}`); return; }
+  if (!auction.bids) auction.bids = [];
+  auction.bids.push({ amount: bidAmount, bidderName: escapeHtml(bidderName), time: new Date().toISOString() });
+  saveAllListings();
+  showToast(`Tawaran ${formatRp(bidAmount)} berhasil!`);
+  openDetailModal(auctionId);
+  renderAll();
+}
+
+function buyNow(auctionId) {
+  const auction = allListings.find(l => l.id === auctionId);
+  if (!auction || new Date(auction.endTime) <= new Date()) { showToast("Lelang sudah selesai!"); return; }
+  if (!auction.buyNowPrice) { showToast("Tidak ada opsi beli langsung"); return; }
+  auction.endTime = new Date().toISOString();
+  auction.bids = auction.bids || [];
+  auction.bids.push({ amount: auction.buyNowPrice, bidderName: currentUser?.username || "Buy Now", time: new Date().toISOString() });
+  saveAllListings();
+  showToast(`Selamat! Anda membeli dengan harga ${formatRp(auction.buyNowPrice)}. Seller akan menghubungi Anda.`);
+  closeDetailModal();
+  renderAll();
+}
+
+// ==================== CRUD ====================
+function deleteListing(id) {
+  const listing = allListings.find(l => l.id === id);
+  if (listing && listing.sellerId !== currentUser?.id) {
+    showToast("Anda tidak bisa menghapus listing milik orang lain!");
+    return;
+  }
+  if(confirm("Hapus listing ini?")){ 
+    allListings = allListings.filter(l => l.id !== id); 
+    saveAllListings(); 
+    renderAll(); 
+    showToast("Listing dihapus"); 
+  }
+}
+
+function clearAllListings() {
+  const myListings = allListings.filter(l => l.sellerId === currentUser?.id);
+  if (myListings.length === 0) { showToast("Tidak ada listing milik Anda"); return; }
+  if(confirm(`Hapus ${myListings.length} listing milik Anda?`)){ 
+    allListings = allListings.filter(l => l.sellerId !== currentUser?.id); 
+    saveAllListings(); 
+    renderAll(); 
+    showToast("Semua listing Anda dihapus"); 
+  }
+}
+
+// ==================== RENDER ALL ====================
+function renderAll() {
+  const direct = allListings.filter(l => l.type === 'direct');
+  const activeAuctions = allListings.filter(l => l.type === 'auction' && new Date(l.endTime) > new Date());
+  const myListings = allListings.filter(l => l.sellerId === currentUser?.id);
+  
+  document.getElementById("directGrid").innerHTML = direct.length ? direct.map(renderDirectCard).join("") : "";
+  document.getElementById("auctionGrid").innerHTML = activeAuctions.length ? activeAuctions.map(renderAuctionCard).join("") : "";
+  document.getElementById("myListingsGrid").innerHTML = myListings.length ? myListings.map(renderMyListing).join("") : "";
+  
+  document.getElementById("noDirect").classList.toggle("hidden", direct.length);
+  document.getElementById("noAuction").classList.toggle("hidden", activeAuctions.length);
+  document.getElementById("noMyListings").classList.toggle("hidden", myListings.length);
+}
+
+// ==================== FORM SUBMIT ====================
+let currentSaleType = "direct";
+document.getElementById("typeDirectBtn").onclick = ()=>{ currentSaleType="direct"; document.getElementById("typeDirectBtn").classList.add("border-b-2","border-orange-500","text-orange-500"); document.getElementById("typeAuctionBtn").classList.remove("border-b-2","border-orange-500","text-orange-500"); document.getElementById("directFields").classList.remove("hidden"); document.getElementById("auctionFields").classList.add("hidden"); document.getElementById("saleType").value="direct"; };
+document.getElementById("typeAuctionBtn").onclick = ()=>{ currentSaleType="auction"; document.getElementById("typeAuctionBtn").classList.add("border-b-2","border-orange-500","text-orange-500"); document.getElementById("typeDirectBtn").classList.remove("border-b-2","border-orange-500","text-orange-500"); document.getElementById("directFields").classList.add("hidden"); document.getElementById("auctionFields").classList.remove("hidden"); document.getElementById("saleType").value="auction"; };
+
+document.getElementById("sellForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!currentUser) { showToast("Silakan login terlebih dahulu"); return; }
+  
+  // Rate limit untuk post
+  const myActiveListings = allListings.filter(l => l.sellerId === currentUser.id && (l.type !== 'auction' || new Date(l.endTime) > new Date()));
+  if (myActiveListings.length >= 10) {
+    showToast("Maksimal 10 listing aktif! Hapus beberapa listing lama.");
+    return;
+  }
+  
+  const captchaAnswer = document.getElementById('sellCaptcha').value;
+  if (!verifyCaptcha('sell', captchaAnswer)) {
+    showToast("Captcha salah!");
+    generateCaptcha('sell');
+    document.getElementById('sellCaptcha').value = '';
+    return;
+  }
+  
+  const saleType = document.getElementById("saleType").value;
+  const cardName = document.getElementById("cardName").value.trim();
+  if(!cardName){ showToast("Nama kartu wajib diisi"); return; }
+  
+  const imageValue = document.getElementById("cardImageUrl").value.trim();
+  const base = { 
+    id: Date.now().toString(), 
+    type: saleType, 
+    cardName: escapeHtml(cardName).substring(0, 100),
+    set: escapeHtml(document.getElementById("cardSet").value).substring(0, 50),
+    rarity: document.getElementById("cardRarity").value, 
+    condition: document.getElementById("cardCondition").value, 
+    desc: escapeHtml(document.getElementById("cardDesc").value).substring(0, 500),
+    image: imageValue, 
+    sellerName: currentUser?.fullname || currentUser?.username,
+    sellerUsername: currentUser?.username,
+    sellerId: currentUser?.id,
+    date: new Date().toISOString(), 
+    bids: [], 
+    chat: [] 
+  };
+  
+  if(saleType === "direct"){
+    const price = parseInt(document.getElementById("directPrice").value); 
+    const link = document.getElementById("productLink").value.trim(); 
+    const platform = document.getElementById("directPlatform").value;
+    if(!price || !link){ showToast("Harga dan link produk wajib diisi"); return; }
+    if(price < 1000) { showToast("Harga minimal Rp 1.000"); return; }
+    if(price > 1000000000) { showToast("Harga maksimal Rp 1 Miliar"); return; }
+    Object.assign(base, { price, link: link.substring(0, 500), platform });
+  } else {
+    const startPrice = parseInt(document.getElementById("startPrice").value); 
+    const minBid = parseInt(document.getElementById("minBidIncrement").value); 
+    const duration = parseInt(document.getElementById("auctionDuration").value); 
+    const buyNow = document.getElementById("buyNowPrice").value ? parseInt(document.getElementById("buyNowPrice").value) : null;
+    if(!startPrice || !minBid){ showToast("Harga awal dan minimal kenaikan wajib diisi"); return; }
+    if(startPrice < 1000) { showToast("Harga awal minimal Rp 1.000"); return; }
+    const endTime = new Date(); 
+    endTime.setDate(endTime.getDate() + duration);
+    Object.assign(base, { startPrice, minBidIncrement: minBid, endTime: endTime.toISOString(), buyNowPrice: buyNow });
+  }
+  
+  allListings.unshift(base); 
+  saveAllListings(); 
+  document.getElementById("sellForm").reset(); 
+  document.getElementById("imagePreview").classList.add("hidden");
+  document.getElementById("cardImageUrl").value = "";
+  generateCaptcha('sell');
+  document.getElementById('sellCaptcha').value = '';
+  showToast(saleType === "direct" ? "Kartu berhasil dijual!" : "Lelang berhasil dibuka!"); 
+  activateTab('market'); 
+  renderAll();
+});
+
+// ==================== SEARCH ====================
+document.getElementById("searchDirectBtn").onclick = () => { 
+  const q = document.getElementById("searchDirect").value.toLowerCase(); 
+  const filtered = allListings.filter(l => l.type === 'direct' && l.cardName.toLowerCase().includes(q)); 
+  document.getElementById("directGrid").innerHTML = filtered.length ? filtered.map(renderDirectCard).join("") : `<div class="col-span-full text-center py-10 text-gray-400">Tidak ditemukan</div>`; 
+};
+
+document.getElementById("searchAuctionBtn").onclick = () => { 
+  const q = document.getElementById("searchAuction").value.toLowerCase(); 
+  const filtered = allListings.filter(l => l.type === 'auction' && new Date(l.endTime) > new Date() && l.cardName.toLowerCase().includes(q)); 
+  document.getElementById("auctionGrid").innerHTML = filtered.length ? filtered.map(renderAuctionCard).join("") : `<div class="col-span-full text-center py-10 text-gray-400">Tidak ditemukan</div>`; 
+};
+
+// ==================== REPORT FORM ====================
+document.getElementById("reportForm")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const link = document.getElementById("reportLink").value;
+  const reason = document.getElementById("reportReason").value;
+  if (!link || !reason) { showToast("Harap isi link dan alasan laporan"); return; }
+  reports.push({
+    id: Date.now().toString(),
+    link: link,
+    reason: escapeHtml(reason).substring(0, 300),
+    reporter: currentUser?.username || 'Anonymous',
+    date: new Date().toISOString()
+  });
+  saveReports();
+  showToast("Laporan terkirim! Terima kasih.");
+  document.getElementById("reportLink").value = "";
+  document.getElementById("reportReason").value = "";
+});
+
+// ==================== TABS ====================
+function activateTab(tab) {
+  document.getElementById("secMarket").classList.toggle("hidden", tab !== "market");
+  document.getElementById("secAuctions").classList.toggle("hidden", tab !== "auctions");
+  document.getElementById("secSell").classList.toggle("hidden", tab !== "sell");
+  document.getElementById("secMyListings").classList.toggle("hidden", tab !== "myListings");
+  document.getElementById("secReports").classList.toggle("hidden", tab !== "reports");
+  const btns = { market: "tabMarket", auctions: "tabAuctions", sell: "tabSell", myListings: "tabMyListings", reports: "tabReports" };
+  Object.keys(btns).forEach(k => { const btn = document.getElementById(btns[k]); if(btn) k === tab ? btn.classList.add("tab-active") : btn.classList.remove("tab-active"); });
+  if(tab === "myListings" || tab === "market") renderAll();
+  if(tab === "reports") generateCaptcha('sell');
+}
+
+document.getElementById("tabMarket").onclick = () => activateTab("market");
+document.getElementById("tabAuctions").onclick = () => activateTab("auctions");
+document.getElementById("tabSell").onclick = () => activateTab("sell");
+document.getElementById("tabMyListings").onclick = () => activateTab("myListings");
+document.getElementById("tabReports").onclick = () => activateTab("reports");
+
+document.getElementById("showLoginBtn").onclick = showLogin;
+document.getElementById("showRegisterBtn").onclick = showRegister;
+
+setInterval(()=>{ if(document.getElementById("detailModal").classList.contains("hidden")) renderAll(); }, 60000);
+checkSession();
+</script>
+</body>
+</html>
