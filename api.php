@@ -6,7 +6,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
 
-require 'config.php';
+require 'supabase_config.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim(str_replace($_SERVER['SCRIPT_NAME'], '', $path), '/');
