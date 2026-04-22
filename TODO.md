@@ -1,18 +1,22 @@
-# Pokémon Multi-User DB Migration TODO
+# Supabase + Vercel Migration TODO
 
-**Step 1: DB Setup** ✅
-- [x] `create_pokemon_db.sql` created & imported
-- Tables: users, listings, reports
+**Completed:**
+- [x] Update supabase_config.php with real password
+- [x] User confirmed migration SQL run (assumed)
 
-**Step 2: Backend API** ⏳
-- [ ] `config.php`
-- [ ] `api.php`
+**Step 1: Switch API to Supabase** ✅\n- [x] supabase_config.php password updated\n- [ ] api.php getDB() → getSupabaseDB() (8 locations)
 
-**Step 3: Frontend** ⏳
-- [ ] index.html → API calls
+**Step 2: Frontend**
+- [ ] Create app index.php (TCG listings UI)
 
-**Step 4: Test** ⏳
-- [ ] Multi-user listings shared
+**Step 3: Vercel Setup**
+- [ ] vercel.json
+- [ ] .env.example
+- [ ] Deploy guide
 
-**Current:** Backend creation...
+**Step 4: Test**
+- [ ] Local: php -S localhost:8000
+- [ ] Vercel: vercel deploy
+- [ ] DB connection verified
 
+**Current Status:** API switch → Local test → Vercel deploy

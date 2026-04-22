@@ -6,7 +6,7 @@ define('SUPABASE_HOST', 'db.myaluqqfvzqxhmpmhifw.supabase.co');  // Change to yo
 define('SUPABASE_PORT', 5432);
 define('SUPABASE_DB', 'postgres');
 define('SUPABASE_USER', 'postgres');
-define('SUPABASE_PASS', 'your_supabase_password_here');  // From Supabase dashboard
+define('SUPABASE_PASS', '8dVz88jOkddZUQjJ');  // Supabase DB password
 
 function getSupabaseDB() {
     static $pdo = null;

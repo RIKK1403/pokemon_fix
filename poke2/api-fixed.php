@@ -6,7 +6,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
 
-require 'supabase_config.php';
+require 'config.php';  // ← sekarang pakai config.php (MySQL)
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = trim(str_replace($_SERVER['SCRIPT_NAME'], '', $path), '/');
@@ -42,7 +42,7 @@ try {
             report();
             break;
         case 'api/test':
-            echo json_encode(['status' => 'API ready']);
+            echo json_encode(['status' => 'API ready - MySQL connected']);
             break;
         default:
             http_response_code(404);
@@ -53,7 +53,8 @@ try {
     echo json_encode(['error' => $e->getMessage()]);
 }
 
-function login($data) {\n    $pdo = getSupabaseDB();
+function login($data) {
+    $pdo = getDB();  // ← MySQL
     $username = strtolower(trim($data['username'] ?? ''));
     $password = $data['password'] ?? '';
     
@@ -78,7 +79,8 @@ function login($data) {\n    $pdo = getSupabaseDB();
     echo json_encode($user);
 }
 
-function register($data) {\n    $pdo = getSupabaseDB();
+function register($data) {
+    $pdo = getDB();  // ← MySQL
     $username = strtolower(trim($data['username'] ?? ''));
     $fullname = trim($data['fullname'] ?? '');
     $email = trim($data['email'] ?? '');
@@ -93,7 +95,7 @@ function register($data) {\n    $pdo = getSupabaseDB();
     $stmt->execute([$username]);
     if ($stmt->fetch()) throw new Exception('Username taken');
     
-    $id = uuid();
+    $id = uuid();  // dari config.php
     $hash = hash('sha256', $password);
     
     $stmt = $pdo->prepare('INSERT INTO users (id, username, fullname, email, whatsapp, password_hash) VALUES (?, ?, ?, ?, ?, ?)');
@@ -103,7 +105,8 @@ function register($data) {\n    $pdo = getSupabaseDB();
     echo json_encode($user);
 }
 
-function handleListings() {\n    $pdo = getSupabaseDB();
+function handleListings() {
+    $pdo = getDB();  // ← MySQL
     $type = $_GET['type'] ?? '';
     $search = $_GET['search'] ?? '';
     
@@ -144,7 +147,8 @@ function myListings() {
     session_start();
     if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');
     
-    $pdo = getSupabaseDB();\n    $stmt = $pdo->prepare('SELECT * FROM listings WHERE seller_id = ? ORDER BY date_created DESC');
+    $pdo = getDB();  // ← MySQL
+    $stmt = $pdo->prepare('SELECT * FROM listings WHERE seller_id = ? ORDER BY date_created DESC');
     $stmt->execute([$_SESSION['user_id']]);
     $listings = $stmt->fetchAll();
     
@@ -155,7 +159,11 @@ function myListings() {
     echo json_encode($listings);
 }
 
-function deleteListing() {\n    session_start();\n    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');\n    \n    $pdo = getSupabaseDB();
+function deleteListing() {
+    session_start();
+    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');
+    
+    $pdo = getDB();  // ← MySQL
     $id = $_GET['id'] ?? '';
     
     $stmt = $pdo->prepare('DELETE FROM listings WHERE id = ? AND seller_id = ?');
@@ -168,7 +176,11 @@ function deleteListing() {\n    session_start();\n    if (!isset($_SESSION['user
     }
 }
 
-function bid() {\n    session_start();\n    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');\n    \n    $pdo = getSupabaseDB();
+function bid() {
+    session_start();
+    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');
+    
+    $pdo = getDB();  // ← MySQL
     $id = $_GET['id'] ?? '';
     $data = json_decode(file_get_contents('php://input'), true);
     $amount = (int)($data['amount'] ?? 0);
@@ -197,7 +209,11 @@ function bid() {\n    session_start();\n    if (!isset($_SESSION['user_id'])) th
     echo json_encode(['success' => true]);
 }
 
-function buyNow() {\n    session_start();\n    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');\n    \n    $pdo = getSupabaseDB();
+function buyNow() {
+    session_start();
+    if (!isset($_SESSION['user_id'])) throw new Exception('Auth required');
+    
+    $pdo = getDB();  // ← MySQL
     $id = $_GET['id'] ?? '';
     
     $stmt = $pdo->prepare('SELECT buy_now_price FROM listings WHERE id = ? AND type = "auction" AND end_time > NOW() AND buy_now_price IS NOT NULL');
@@ -213,11 +229,14 @@ function buyNow() {\n    session_start();\n    if (!isset($_SESSION['user_id']))
     echo json_encode(['success' => true]);
 }
 
-function report() {\n    session_start();\n    $data = json_decode(file_get_contents('php://input'), true);\n    \n    $pdo = getSupabaseDB();
+function report() {
+    session_start();
+    $data = json_decode(file_get_contents('php://input'), true);
+    
+    $pdo = getDB();  // ← MySQL
     $stmt = $pdo->prepare('INSERT INTO reports (id, listing_id, reason, reporter) VALUES (?, ?, ?, ?)');
     $stmt->execute([uuid(), $data['listing_id'], $data['reason'], $_SESSION['user_id'] ?? 'anon']);
     
     echo json_encode(['success' => true]);
 }
 ?>
-
