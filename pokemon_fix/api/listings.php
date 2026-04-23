@@ -28,6 +28,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     $all = isset($_GET['all']) && $_GET['all'] == 'true';
     if ($all) {
+        // Marketplace: tampilkan SEMUA listing tanpa filter apapun
         $stmt = $pdo->prepare('
             SELECT l.*, u.username as seller_username, u.fullname as seller_fullname, u.whatsapp as seller_whatsapp
             FROM listings l
@@ -85,10 +86,27 @@ elseif ($method === 'POST') {
             echo json_encode(['error' => 'Harga dan link produk wajib diisi']);
             exit;
         }
+        $price = (int)$input['price'];
+        if ($price < 1000) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Harga minimal Rp 1.000']);
+            exit;
+        }
+        if ($price > 1000000000) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Harga maksimal Rp 1.000.000.000']);
+            exit;
+        }
     } else {
         if (empty($input['start_price'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Harga awal lelang wajib diisi']);
+            exit;
+        }
+        $startPrice = (int)$input['start_price'];
+        if ($startPrice < 1000) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Harga awal minimal Rp 1.000']);
             exit;
         }
     }
@@ -112,7 +130,14 @@ elseif ($method === 'POST') {
         $duration = (int)($input['auction_duration'] ?? 3);
         $endTime = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
         $fields['start_price'] = (int)$input['start_price'];
-        $fields['min_bid_increment'] = (int)($input['min_bid_increment'] ?? 10000);
+        $minBidIncrement = (int)($input['min_bid_increment'] ?? 10000);
+        if ($minBidIncrement < 1000) $minBidIncrement = 1000;
+        if ($minBidIncrement > 1000000) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Minimal kenaikan maksimal Rp 1.000.000']);
+            exit;
+        }
+        $fields['min_bid_increment'] = $minBidIncrement;
         $fields['buy_now_price'] = !empty($input['buy_now_price']) ? (int)$input['buy_now_price'] : null;
         $fields['end_time'] = $endTime;
     }
@@ -147,12 +172,18 @@ elseif ($method === 'DELETE') {
         exit;
     }
     
-    $stmt = $pdo->prepare('SELECT image FROM listings WHERE id = ? AND user_id = ?');
+    // Cek apakah lelang aktif
+    $stmt = $pdo->prepare('SELECT type, end_time, image FROM listings WHERE id = ? AND user_id = ?');
     $stmt->execute([$id, $userId]);
     $listing = $stmt->fetch();
     if (!$listing) {
         http_response_code(404);
         echo json_encode(['error' => 'Listing tidak ditemukan']);
+        exit;
+    }
+    if ($listing['type'] === 'auction' && strtotime($listing['end_time']) > time()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Lelang aktif tidak dapat dihapus']);
         exit;
     }
     

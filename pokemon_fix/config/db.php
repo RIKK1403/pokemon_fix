@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('Asia/Jakarta');
+
 class Database {
     private $host = '127.0.0.1';
     private $dbname = 'pokemon_fix';
@@ -16,6 +18,7 @@ class Database {
                     PDO::ATTR_EMULATE_PREPARES => false,
                 ]);
             } catch (PDOException $e) {
+                http_response_code(500);
                 die(json_encode(['error' => 'Database connection failed']));
             }
         }

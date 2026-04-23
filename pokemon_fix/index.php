@@ -1,15 +1,13 @@
 <?php
 require_once 'config/session_security.php';
 $sessionExists = isset($_SESSION['user_id']);
-
-// Panggil pengecekan lelang kadaluarsa setiap kali halaman dimuat
-include_once 'api/check_expired_auctions.php';
+// include_once 'api/check_expired_auctions.php'; // opsional, bisa diaktifkan nanti
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>RK.POKE - Jual Beli Kartu Pokemon</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -23,6 +21,8 @@ include_once 'api/check_expired_auctions.php';
         .captcha { background: #f3f4f6; border-radius: 12px; padding: 12px; display: inline-flex; align-items: center; gap: 10px; }
         #imagePreviewContainer img { max-width: 150px; max-height: 150px; object-fit: contain; }
         #notifDropdown { max-width: 350px; right: 0; left: auto; }
+        .chat-container { max-height: 300px; overflow-y: auto; }
+        .message-bubble { max-width: 80%; word-wrap: break-word; }
     </style>
 </head>
 <body>
@@ -71,7 +71,6 @@ include_once 'api/check_expired_auctions.php';
         <h1 class="text-xl font-bold">RK.<span class="text-orange-500">POKE</span></h1>
         <div class="flex items-center gap-4">
             <span id="currentUsername" class="text-sm font-semibold"></span>
-            <!-- Ikon Notifikasi -->
             <div class="relative">
                 <button id="notifBtn" class="relative focus:outline-none">
                     <i class="fas fa-bell text-gray-600 text-xl"></i>
@@ -111,15 +110,19 @@ include_once 'api/check_expired_auctions.php';
                         <button type="button" id="typeAuctionBtn" class="bg-gray-300 px-4 py-1 rounded">Lelang</button>
                     </div>
                     <div id="directFields">
-                        <input type="number" id="directPrice" placeholder="Harga (Rp)" class="border p-2 rounded-xl w-full mb-2">
+                        <input type="number" id="directPrice" placeholder="Harga (Rp)" class="border p-2 rounded-xl w-full mb-2" min="1000" max="1000000000">
                         <input type="url" id="productLink" placeholder="Link Produk" class="border p-2 rounded-xl w-full mb-2">
                         <select id="directPlatform" class="border p-2 rounded-xl w-full mb-2"><option>shopee</option><option>tokopedia</option><option>whatsapp</option></select>
                     </div>
                     <div id="auctionFields" class="hidden">
-                        <input type="number" id="startPrice" placeholder="Harga Awal (Rp)" class="border p-2 rounded-xl w-full mb-2">
-                        <input type="number" id="minBidIncrement" placeholder="Min Kenaikan (Rp)" value="10000" class="border p-2 rounded-xl w-full mb-2" min="1000" max="1000000">
-                        <input type="number" id="buyNowPrice" placeholder="Buy Now (opsional)" class="border p-2 rounded-xl w-full mb-2">
-                        <select id="auctionDuration" class="border p-2 rounded-xl w-full mb-2"><option value="3">3 Hari</option><option value="7">7 Hari</option></select>
+                        <input type="number" id="startPrice" placeholder="Harga Awal (Rp)" class="border p-2 rounded-xl w-full mb-2" min="1000">
+                        <input type="number" id="minBidIncrement" placeholder="Min Kenaikan (Rp)" value="10000" class="border p-2 rounded-xl w-full mb-2" min="1000" max="1000000" step="1000">
+                        <input type="number" id="buyNowPrice" placeholder="Buy Now (opsional)" class="border p-2 rounded-xl w-full mb-2" min="0">
+                        <select id="auctionDuration" class="border p-2 rounded-xl w-full mb-2">
+                            <option value="1">1 Hari</option>
+                            <option value="3" selected>3 Hari</option>
+                            <option value="7">7 Hari</option>
+                        </select>
                     </div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Foto Kartu (upload dari HP/galeri)</label>
                     <input type="file" id="cardImageFile" accept="image/jpeg,image/png,image/webp" class="border p-2 rounded-xl w-full mb-2">
@@ -146,7 +149,7 @@ include_once 'api/check_expired_auctions.php';
 
 <!-- Modal Detail Kartu -->
 <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 items-center justify-center p-4" style="display:none;">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
             <h3 id="modalTitle" class="text-xl font-bold">Detail Kartu</h3>
             <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
@@ -169,14 +172,22 @@ function verifyCaptcha(type, answer) { return parseInt(answer) === currentCaptch
 
 // ==================== CSRF ====================
 let csrfToken = null;
+let csrfRetry = 0;
 async function fetchCsrfToken() {
     try {
         const res = await fetch('./api/csrf_token.php');
+        if (!res.ok) throw new Error('HTTP '+res.status);
         const data = await res.json();
         csrfToken = data.csrf_token;
+        csrfRetry = 0;
         return csrfToken;
     } catch(e) {
         console.error('CSRF token fetch failed', e);
+        if (csrfRetry < 3) {
+            csrfRetry++;
+            await new Promise(r => setTimeout(r, 500));
+            return fetchCsrfToken();
+        }
         return null;
     }
 }
@@ -203,7 +214,6 @@ async function apiCall(endpoint, options = {}) {
 async function validateTabToken() {
     let tabToken = sessionStorage.getItem('rkpoke_tab_token');
     if (!tabToken) {
-        await forceLogout();
         return false;
     }
     try {
@@ -214,19 +224,21 @@ async function validateTabToken() {
         });
         const data = await res.json();
         if (!data.valid) {
-            await forceLogout();
+            sessionStorage.removeItem('rkpoke_tab_token');
             return false;
         }
         return true;
     } catch(e) {
         console.error('Tab validation failed', e);
-        await forceLogout();
         return false;
     }
 }
 
-async function forceLogout() {
-    await fetch('./api/logout.php', { method: 'POST' }).catch(()=>{});
+async function safeLogout(reason = '') {
+    console.log('Logout karena:', reason);
+    try {
+        await fetch('./api/logout.php', { method: 'POST' }).catch(()=>{});
+    } catch(e) {}
     sessionStorage.removeItem('rkpoke_tab_token');
     window.location.href = window.location.href;
 }
@@ -236,6 +248,8 @@ let currentUser = null;
 let allListings = [];
 let myListings = [];
 let uploadedImageUrl = '';
+let chatInterval = null;
+let currentChatListingId = null;
 
 // ==================== USER VALIDATION ====================
 async function checkCurrentUser() {
@@ -250,47 +264,16 @@ async function checkCurrentUser() {
                 loadNotifications();
             }
         } else {
-            logout();
+            if (document.getElementById('mainApp') && !document.getElementById('mainApp').classList.contains('hidden')) {
+                await safeLogout('session invalid');
+            }
         }
     } catch(e) { console.error('User check failed', e); }
 }
 
-// ==================== NOTIFICATIONS ====================
-async function loadNotifications() {
-    if (!currentUser) return;
-    try {
-        const data = await apiCall('notifications.php');
-        const unread = data.unread;
-        const badge = document.getElementById('notifBadge');
-        if (unread > 0) {
-            badge.innerText = unread > 99 ? '99+' : unread;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-        const list = document.getElementById('notifList');
-        if (!list) return;
-        list.innerHTML = data.notifications.map(n => `
-            <div class="p-3 border-b hover:bg-gray-50 ${n.is_read ? '' : 'bg-blue-50'}">
-                <div class="font-semibold">${escapeHtml(n.title)}</div>
-                <div class="text-sm text-gray-600">${escapeHtml(n.message)}</div>
-                <div class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleString()}</div>
-                ${!n.is_read ? `<button onclick="markRead(${n.id})" class="text-xs text-blue-500 mt-1">Tandai sudah dibaca</button>` : ''}
-            </div>
-        `).join('');
-        if (!data.notifications.length) list.innerHTML = '<div class="p-3 text-gray-500">Tidak ada notifikasi</div>';
-    } catch(e) { console.error(e); }
-}
-
-async function markRead(id) {
-    try {
-        await apiCall('mark_read.php', { method: 'POST', body: JSON.stringify({ id }) });
-        loadNotifications();
-    } catch(e) { alert(e.message); }
-}
-
 // ==================== AUTH ====================
-async function handleLogin() {
+async function handleLogin(e) {
+    if (e) e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
     const captcha = document.getElementById('loginCaptcha').value;
@@ -321,7 +304,8 @@ async function handleLogin() {
     }
 }
 
-async function handleRegister() {
+async function handleRegister(e) {
+    if (e) e.preventDefault();
     const fullname = document.getElementById('regFullname').value.trim();
     const username = document.getElementById('regUsername').value.trim().toLowerCase();
     const email = document.getElementById('regEmail').value.trim();
@@ -381,6 +365,18 @@ async function createListing(listingData) {
     const captcha = document.getElementById('sellCaptcha').value;
     if (!verifyCaptcha('sell', captcha)) { alert('Captcha salah'); generateCaptcha('sell'); return false; }
     if (!uploadedImageUrl) { alert('Silakan upload gambar kartu terlebih dahulu'); return false; }
+    
+    if (listingData.type === 'auction') {
+        if (listingData.min_bid_increment > 1000000) {
+            alert('Minimal kenaikan maksimal Rp 1.000.000');
+            return false;
+        }
+        if (listingData.min_bid_increment < 1000) {
+            alert('Minimal kenaikan minimal Rp 1.000');
+            return false;
+        }
+    }
+    
     listingData.image = uploadedImageUrl;
     try {
         await fetchCsrfToken();
@@ -412,12 +408,25 @@ async function createListing(listingData) {
 }
 
 async function deleteListing(id) {
+    const listing = allListings.find(l => l.id == id) || myListings.find(l => l.id == id);
+    if (!listing) {
+        alert('Listing tidak ditemukan');
+        return;
+    }
+    if (listing.type === 'auction') {
+        const isActive = new Date(listing.end_time) > new Date();
+        if (isActive) {
+            alert('Lelang tidak dapat dihapus sebelum waktu berakhir!');
+            return;
+        }
+    }
     if (!confirm('Hapus listing ini?')) return;
     try {
         await fetchCsrfToken();
         await apiCall('listings.php', { method: 'DELETE', body: `id=${id}`, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         await loadMarketplace();
         await loadMyListings();
+        alert('Listing dihapus');
     } catch(err) { alert(err.message); }
 }
 
@@ -429,6 +438,67 @@ function formatRupiah(angka) {
     return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+// ==================== CHAT FUNCTIONS ====================
+async function loadChatMessages(listingId) {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(`./api/chat_fetch.php?listing_id=${listingId}`, {
+            headers: { 'X-CSRF-Token': csrfToken }
+        });
+        const data = await res.json();
+        const container = document.getElementById(`chatMessages_${listingId}`);
+        if (!container) return;
+        if (data.messages.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400 py-4">Belum ada pesan. Mulai chat dengan penjual!</div>';
+        } else {
+            container.innerHTML = data.messages.map(msg => `
+                <div class="mb-3 flex ${msg.sender_id == currentUser?.id ? 'justify-end' : 'justify-start'}">
+                    <div class="message-bubble px-3 py-2 rounded-lg ${msg.sender_id == currentUser?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}">
+                        <div class="text-xs font-bold">${escapeHtml(msg.sender_name)}</div>
+                        <div class="text-sm">${escapeHtml(msg.message)}</div>
+                        <div class="text-xs opacity-70 mt-1">${new Date(msg.created_at).toLocaleString('id-ID')}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        container.scrollTop = container.scrollHeight;
+    } catch(e) { console.error('Load chat error', e); }
+}
+
+async function sendChat(listingId) {
+    const input = document.getElementById(`chatInput_${listingId}`);
+    const message = input.value.trim();
+    if (!message) return;
+    try {
+        await fetchCsrfToken();
+        const res = await fetch('./api/chat_send.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ listing_id: listingId, message: message })
+        });
+        const data = await res.json();
+        if (data.success) {
+            input.value = '';
+            loadChatMessages(listingId);
+        } else {
+            alert(data.error);
+        }
+    } catch(e) { alert('Gagal mengirim pesan'); }
+}
+
+function startChatPolling(listingId) {
+    if (chatInterval) clearInterval(chatInterval);
+    currentChatListingId = listingId;
+    chatInterval = setInterval(() => {
+        if (document.getElementById(`chatMessages_${listingId}`)) {
+            loadChatMessages(listingId);
+        } else {
+            clearInterval(chatInterval);
+            currentChatListingId = null;
+        }
+    }, 5000);
+}
+
 // ==================== MODAL DETAIL ====================
 function openDetailModal(listing) {
     document.getElementById('modalTitle').innerText = listing.card_name;
@@ -438,7 +508,13 @@ function openDetailModal(listing) {
     if (listing.type === 'auction') {
         const bids = listing.bids || [];
         const currentBid = bids.length ? Math.max(...bids.map(b => b.amount)) : listing.start_price;
-        const minBid = currentBid + listing.min_bid_increment;
+        let minBidIncrement = listing.min_bid_increment;
+        let isDataInvalid = false;
+        if (minBidIncrement > 1000000) {
+            isDataInvalid = true;
+            minBidIncrement = 10000;
+        }
+        const minBid = currentBid + minBidIncrement;
         const isActive = new Date(listing.end_time) > new Date();
         
         if (isActive) {
@@ -447,7 +523,8 @@ function openDetailModal(listing) {
                     <p class="text-sm text-gray-600">Harga awal: ${formatRupiah(listing.start_price)}</p>
                     <p class="text-2xl font-bold text-orange-600">Tawaran tertinggi: ${formatRupiah(currentBid)}</p>
                     <p class="text-sm">Minimal tawaran berikutnya: ${formatRupiah(minBid)}</p>
-                    <p class="text-sm">Berakhir: ${new Date(listing.end_time).toLocaleString()}</p>
+                    ${isDataInvalid ? '<p class="text-red-500 text-xs mt-1">⚠️ Data kenaikan tidak wajar, hubungi admin</p>' : ''}
+                    <p class="text-sm">Berakhir: ${new Date(listing.end_time).toLocaleString('id-ID')}</p>
                     <div class="mt-3">
                         <input type="number" id="bidAmount" class="border p-2 rounded w-full mb-2" placeholder="Masukkan tawaran (min ${formatRupiah(minBid)})">
                         <button onclick="placeBid(${listing.id})" class="bg-orange-500 text-white px-4 py-2 rounded w-full">Tawar</button>
@@ -457,7 +534,7 @@ function openDetailModal(listing) {
                 <div class="mt-4">
                     <h4 class="font-bold">Riwayat Tawaran</h4>
                     <ul class="text-sm">
-                        ${bids.sort((a,b)=>b.amount - a.amount).slice(0,5).map(b => `<li>${formatRupiah(b.amount)} - ${b.bidder_name} (${new Date(b.time).toLocaleString()})</li>`).join('')}
+                        ${bids.sort((a,b)=>b.amount - a.amount).slice(0,5).map(b => `<li>${formatRupiah(b.amount)} - ${b.bidder_name} (${new Date(b.time).toLocaleString('id-ID')})</li>`).join('')}
                         ${!bids.length ? '<li>Belum ada tawaran</li>' : ''}
                     </ul>
                 </div>
@@ -488,7 +565,7 @@ function openDetailModal(listing) {
                 <div class="mt-4">
                     <h4 class="font-bold">Riwayat Tawaran</h4>
                     <ul class="text-sm">
-                        ${bids.sort((a,b)=>b.amount - a.amount).map(b => `<li>${formatRupiah(b.amount)} - ${b.bidder_name} (${new Date(b.time).toLocaleString()})</li>`).join('')}
+                        ${bids.sort((a,b)=>b.amount - a.amount).map(b => `<li>${formatRupiah(b.amount)} - ${b.bidder_name} (${new Date(b.time).toLocaleString('id-ID')})</li>`).join('')}
                     </ul>
                 </div>
             `;
@@ -502,6 +579,20 @@ function openDetailModal(listing) {
         `;
     }
     
+    // Chat section
+    const chatHtml = `
+        <div class="mt-6 border-t pt-4">
+            <h4 class="font-bold mb-2"><i class="fas fa-comment-dots"></i> Chat dengan Penjual</h4>
+            <div id="chatMessages_${listing.id}" class="chat-container bg-gray-50 rounded-lg p-3 h-64 overflow-y-auto mb-3">
+                <div class="text-center text-gray-400 py-4">Memuat pesan...</div>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="chatInput_${listing.id}" placeholder="Tulis pesan..." class="flex-1 border rounded-lg px-3 py-2">
+                <button onclick="sendChat(${listing.id})" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Kirim</button>
+            </div>
+        </div>
+    `;
+    
     modalContent.innerHTML = `
         <img src="${listing.image || 'https://via.placeholder.com/300'}" class="w-full rounded-xl mb-4">
         <p><strong>Set:</strong> ${listing.set || '-'}</p>
@@ -510,12 +601,22 @@ function openDetailModal(listing) {
         <p><strong>Deskripsi:</strong> ${listing.desc || '-'}</p>
         <p><strong>Penjual:</strong> ${listing.seller_username}</p>
         ${actionHtml}
+        ${currentUser ? chatHtml : '<div class="mt-6 border-t pt-4 text-center text-gray-500">Login untuk chat dengan penjual</div>'}
     `;
     document.getElementById('detailModal').style.display = 'flex';
+    
+    if (currentUser) {
+        loadChatMessages(listing.id);
+        startChatPolling(listing.id);
+    }
 }
 
 function closeModal() {
     document.getElementById('detailModal').style.display = 'none';
+    if (chatInterval) {
+        clearInterval(chatInterval);
+        chatInterval = null;
+    }
 }
 
 async function placeBid(listingId) {
@@ -584,6 +685,41 @@ function renderMyListings() {
             <button onclick="deleteListing(${l.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">Hapus</button>
         </div>
     `).join('');
+}
+
+// ==================== NOTIFICATIONS ====================
+async function loadNotifications() {
+    if (!currentUser) return;
+    try {
+        const data = await apiCall('notifications.php');
+        const unread = data.unread;
+        const badge = document.getElementById('notifBadge');
+        if (unread > 0) {
+            badge.innerText = unread > 99 ? '99+' : unread;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+        const list = document.getElementById('notifList');
+        if (list) {
+            list.innerHTML = data.notifications.map(n => `
+                <div class="p-3 border-b hover:bg-gray-50 ${n.is_read ? '' : 'bg-blue-50'}">
+                    <div class="font-semibold">${escapeHtml(n.title)}</div>
+                    <div class="text-sm text-gray-600">${escapeHtml(n.message)}</div>
+                    <div class="text-xs text-gray-400 mt-1">${new Date(n.created_at).toLocaleString('id-ID')}</div>
+                    ${!n.is_read ? `<button onclick="markRead(${n.id})" class="text-xs text-blue-500 mt-1">Tandai sudah dibaca</button>` : ''}
+                </div>
+            `).join('');
+            if (!data.notifications.length) list.innerHTML = '<div class="p-3 text-gray-500">Tidak ada notifikasi</div>';
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function markRead(id) {
+    try {
+        await apiCall('mark_read.php', { method: 'POST', body: JSON.stringify({ id }) });
+        loadNotifications();
+    } catch(e) { alert(e.message); }
 }
 
 // ==================== UTILITIES ====================
@@ -677,8 +813,10 @@ document.addEventListener('click', function(event) {
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('loginButton').addEventListener('click', handleLogin);
-    document.getElementById('registerButton').addEventListener('click', handleRegister);
+    const loginBtn = document.getElementById('loginButton');
+    const registerBtn = document.getElementById('registerButton');
+    if (loginBtn) loginBtn.addEventListener('click', (e) => { e.preventDefault(); handleLogin(e); });
+    if (registerBtn) registerBtn.addEventListener('click', (e) => { e.preventDefault(); handleRegister(e); });
     document.getElementById('logoutButton').addEventListener('click', logout);
     document.getElementById('showLoginBtn').addEventListener('click', showLogin);
     document.getElementById('showRegisterBtn').addEventListener('click', showRegister);
@@ -698,12 +836,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             desc: document.getElementById('cardDesc').value
         };
         if (window.saleType === 'direct') {
-            data.price = parseInt(document.getElementById('directPrice').value);
+            const price = parseInt(document.getElementById('directPrice').value);
+            if (isNaN(price) || price < 1000) {
+                alert('Harga minimal Rp 1.000');
+                return;
+            }
+            data.price = price;
             data.link = document.getElementById('productLink').value;
             data.platform = document.getElementById('directPlatform').value;
         } else {
-            data.start_price = parseInt(document.getElementById('startPrice').value);
-            data.min_bid_increment = parseInt(document.getElementById('minBidIncrement').value);
+            const startPrice = parseInt(document.getElementById('startPrice').value);
+            if (isNaN(startPrice) || startPrice < 1000) {
+                alert('Harga awal minimal Rp 1.000');
+                return;
+            }
+            data.start_price = startPrice;
+            let minBid = parseInt(document.getElementById('minBidIncrement').value);
+            if (isNaN(minBid)) minBid = 10000;
+            if (minBid < 1000) minBid = 1000;
+            if (minBid > 1000000) {
+                alert('Minimal kenaikan maksimal Rp 1.000.000');
+                return;
+            }
+            data.min_bid_increment = minBid;
             data.buy_now_price = document.getElementById('buyNowPrice').value ? parseInt(document.getElementById('buyNowPrice').value) : null;
             data.auction_duration = parseInt(document.getElementById('auctionDuration').value);
         }
